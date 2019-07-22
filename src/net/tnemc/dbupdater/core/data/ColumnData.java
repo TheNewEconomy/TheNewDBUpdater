@@ -2,7 +2,6 @@ package net.tnemc.dbupdater.core.data;
 
 public class ColumnData {
 
-
   //Identifying
   private String name;
   private String type;

@@ -2,6 +2,8 @@ package net.tnemc.dbupdater.core.providers;
 
 import net.tnemc.dbupdater.core.data.ColumnData;
 import net.tnemc.dbupdater.core.data.TableData;
+import net.tnemc.dbupdater.core.translator.FormatTypeTranslator;
+import net.tnemc.dbupdater.core.translator.impl.BasicTypeTranslator;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -13,6 +15,10 @@ import java.util.Map;
 public interface FormatProvider {
 
   String name();
+
+  default FormatTypeTranslator translator() {
+    return new BasicTypeTranslator();
+  }
 
   default String metaQuery() {
     return "SELECT table_name, column_name, column_default, is_nullable, data_type, " +
@@ -66,9 +72,27 @@ public interface FormatProvider {
   }
 
   default String generateColumn(ColumnData data) {
-    StringBuilder builder = new StringBuilder();
 
-    return builder.toString();
+    String length = "";
+    if(translator().scaleTypes().contains(data.getType()) && data.getScale() > -1) {
+      length += data.getPrecision() + ", " + data.getScale();
+    } else if(translator().numericTypes().contains(data.getType())) {
+      length += data.getPrecision();
+    } else {
+      if(data.getLength() > -1) length += data.getLength();
+    }
+
+    if(!length.equalsIgnoreCase("")) length = "(" + length + ")";
+
+    final String nullable = (!data.isNullable())? " NOT NULL" : "";
+    String extra = (data.isUnique())? " UNIQUE" : "";
+    if(data.isIncrement()) extra += " AUTO_INCREMENT";
+
+    String collation = characterSet(data.getCharacterSet()) + collation(data.getCollate());
+
+    String column = "`" + data.getName() + "` " + translator().translate(data.getType()) + length + nullable + extra + collation;
+
+    return column;
   }
 
   default String generateTableCreate(TableData data) {
