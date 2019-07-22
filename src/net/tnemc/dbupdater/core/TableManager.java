@@ -1,9 +1,15 @@
 package net.tnemc.dbupdater.core;
 
+import net.tnemc.config.CommentedConfiguration;
 import net.tnemc.dbupdater.core.data.ColumnData;
 import net.tnemc.dbupdater.core.data.TableData;
 import net.tnemc.dbupdater.core.providers.FormatProvider;
+import net.tnemc.dbupdater.core.providers.impl.H2Format;
+import net.tnemc.dbupdater.core.providers.impl.MySQLFormat;
 
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -12,6 +18,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class TableManager {
 
@@ -24,9 +31,20 @@ public class TableManager {
 
   private Map<String, FormatProvider> providers = new HashMap<>();
 
-  private String format = "H2";
+  private String format;
 
   public TableManager(String format) {
+    this.format = format;
+
+    addFormat(new H2Format());
+    addFormat(new MySQLFormat());
+  }
+
+  public String getFormat() {
+    return format;
+  }
+
+  public void setFormat(String format) {
     this.format = format;
   }
 
@@ -38,7 +56,9 @@ public class TableManager {
     return providers.get(format);
   }
 
-  public void generateQueriesAndRun(Connection connection) {
+  public void generateQueriesAndRun(Connection connection, InputStream schemaFileStream) {
+    generateConfigurationTables(schemaFileStream);
+    generateDataBaseTables(connection);
     generateQueries();
     runQueries(connection);
   }
@@ -85,7 +105,57 @@ public class TableManager {
     }
   }
 
-  public void generateConfigurationTables() {
+  public void generateConfigurationTables(InputStream schemaFileStream) {
+    CommentedConfiguration config = new CommentedConfiguration(new InputStreamReader(schemaFileStream, StandardCharsets.UTF_8), null);
+    config.load();
+
+    final Set<String> tables = config.getSection("Tables").getKeys();
+    final String prefix = config.getString("Settings.Prefix", "");
+    prefixes.add(prefix);
+
+    for(String tableName : tables) {
+      final String base = "Tables." + tableName;
+      TableData table = new TableData(tableName);
+
+      //Set the table's settings
+      table.setEngine(config.getString(base + ".Settings.Engine", ""));
+      table.setCharacterSet(config.getString(base + ".Settings.Charset", ""));
+      table.setCollate(config.getString(base + ".Settings.Collate", ""));
+
+      final Set<String> columns = config.getSection(base + ".Columns").getKeys();
+
+      for(String columnName : columns) {
+        final String baseNode = base + ".Columns." + columnName;
+        ColumnData column = new ColumnData(columnName);
+
+        //Identifying
+        column.setType(provider().translator().translate(config.getString(baseNode + ".Type", "VARCHAR")));
+        column.setPrimary(config.getBool(baseNode + ".Primary", false));
+        column.setUnique(config.getBool(baseNode + ".Unique", false));
+
+        //Length
+        if(provider().translator().numericTypes().contains(column.getType())) {
+          column.setPrecision(Long.valueOf(config.getString(baseNode + ".Length", "-1")));
+        } else {
+          column.setLength(Long.valueOf(config.getString(baseNode + ".Length", "-1")));
+        }
+        column.setScale(Long.valueOf(config.getString(baseNode + ".Scale", "-1")));
+
+        //Defaults
+        column.setDefaultValue(config.getString(baseNode + ".Default", null));
+        column.setCharacterSet(table.getCharacterSet());
+        column.setCharacterSet(config.getString(baseNode + ".Charset", ""));
+        column.setCollate(table.getCollate());
+        column.setCollate(config.getString(baseNode + ".Collate", ""));
+
+        //Extra
+        column.setNullable(config.getBool(baseNode + ".Null", true));
+        column.setIncrement(config.getBool(baseNode + ".Increment", false));
+
+        table.addColumn(column);
+      }
+      configurationTables.put(prefix + tableName, table);
+    }
 
   }
 
