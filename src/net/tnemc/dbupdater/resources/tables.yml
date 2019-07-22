@@ -1,0 +1,70 @@
+Tables:
+
+  _Example:
+
+    Columns:
+
+      example:
+
+        Type: "INTEGER"
+
+        Unique: true
+
+        Increment: true
+
+      exampleVar:
+
+        Type: "VARCHAR"
+
+        Length: "50"
+
+        Default: "DEFAULT_STRING"
+
+        Null: false
+
+    Settings:
+
+      Engine: "INNODB"
+
+      Charset: "utf8mb4"
+
+      Collate: "utf8mb4_unicode_ci"
+
+  _ExamplePrimary:
+
+    Columns:
+
+      name:
+
+        Type: "VARCHAR"
+
+        Length: 50
+
+        Null: false
+
+        Primary: true
+
+      value:
+
+        Type: "DECIMAL"
+
+        Length: 49
+
+        Scale: 4
+
+        Null: false
+
+        Primary: true
+
+    Settings:
+
+      Engine: "INNODB"
+
+      Charset: "utf8mb4"
+
+      Collate: "utf8mb4_unicode_ci"
+
+
+Settings:
+
+  Prefix: "Prefix"
