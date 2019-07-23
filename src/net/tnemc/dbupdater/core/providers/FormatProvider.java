@@ -69,10 +69,14 @@ public interface FormatProvider {
   }
 
   default String dropColumn(String column) {
-    return "DROP COLUMN " + column;
+    return " DROP COLUMN " + column;
   }
 
   default String generateColumn(ColumnData data) {
+    return generateColumn(data, false);
+  }
+
+  default String generateColumn(ColumnData data, boolean collate) {
 
     String length = "";
     if(translator().scaleTypes().contains(data.getType()) && data.getScale() > -1) {
@@ -89,7 +93,7 @@ public interface FormatProvider {
     String extra = (data.isUnique())? " UNIQUE" : "";
     if(data.isIncrement()) extra += " AUTO_INCREMENT";
 
-    String collation = characterSet(data.getCharacterSet()) + collation(data.getCollate());
+    String collation = (collate)? characterSet(data.getCharacterSet()) + collation(data.getCollate()) : "";
 
     String defaultValue = (data.getDefaultValue() == null)? "" : " DEFAULT '" + data.getDefaultValue() + "'";
 
@@ -106,7 +110,7 @@ public interface FormatProvider {
     int i = 0;
     for(ColumnData columnData : data.getColumns().values()) {
       if(i > 0) builder.append(", ");
-      builder.append(generateColumn(columnData));
+      builder.append(generateColumn(columnData, false));
       i++;
     }
 
@@ -142,9 +146,11 @@ public interface FormatProvider {
 
     builder.append(alterTable(table));
 
+    int i = 0;
     for(String column : columns) {
-      if(builder.length() > 0) builder.append(", ");
+      if(i > 0) builder.append(",");
       builder.append(dropColumn(column));
+      i++;
     }
 
     return builder.toString();
@@ -182,25 +188,33 @@ public interface FormatProvider {
           final String table = results.getString("table_name");
 
           ColumnData data = new ColumnData(results.getString("column_name"));
+
           final String defaultValue = results.getString("column_default");
           data.setDefaultValue(((results.wasNull())? null : defaultValue));
+
           data.setNullable(results.getString("is_nullable").equalsIgnoreCase("yes"));
-          data.setType(results.getString("data_type"));
+
+          data.setType(translator().translate(results.getString("data_type").toUpperCase()));
+
           final long charMax = results.getLong("character_maximum_length");
           data.setLength(((results.wasNull())? -1 : charMax));
+
           final long numericPrecision = results.getLong("numeric_precision");
-          System.out.println("Numeric Precision for : " + data.getName() + " - " + numericPrecision);
           data.setPrecision(((results.wasNull())? -1 : numericPrecision));
+
           final long numericScale = results.getLong("numeric_scale");
           data.setScale(((results.wasNull())? -1 : numericScale));
+
           final String characterSetName = results.getString("character_set_name");
           data.setCharacterSet(((results.wasNull())? "" : characterSetName));
+
           final String collationName = results.getString("collation_name");
           data.setCollate(((results.wasNull())? "" : collationName));
 
           final String columnKey = results.getString("column_key");
           data.setUnique(columnKey.toLowerCase().contains("uni"));
           data.setPrimary(columnKey.toLowerCase().contains("pri"));
+
           data.setIncrement(results.getString("extra").contains("auto_increment"));
 
 

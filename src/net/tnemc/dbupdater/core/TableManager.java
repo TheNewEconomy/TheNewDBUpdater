@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -64,12 +65,11 @@ public class TableManager {
 
   public void runQueries(Connection connection) {
     for(String query : queries) {
-      System.out.println(query);
-      /*try(Statement statement = connection.createStatement()) {
+      try(Statement statement = connection.createStatement()) {
         statement.executeUpdate(query);
       } catch(Exception e) {
         e.printStackTrace();
-      }*/
+      }
     }
   }
 
@@ -84,7 +84,9 @@ public class TableManager {
     }
 
     for(Map.Entry<String, TableData> entry : configurationTables.entrySet()) {
-      if(tablesCreateName.contains(entry.getKey())) continue;
+      if(tablesCreateName.contains(entry.getKey())) {
+        continue;
+      }
 
       String lastColumn = "";
       for(Map.Entry<String, ColumnData> colEntry : entry.getValue().getColumns().entrySet()) {
@@ -93,9 +95,6 @@ public class TableManager {
           lastColumn = colEntry.getKey();
           continue;
         }
-
-        System.out.println("DB Column Gen: " + provider().generateColumn(dataBase.get(entry.getKey().toLowerCase()).getColumns().get(colEntry.getKey())));
-        System.out.println("Config Column Gen: " + provider().generateColumn(colEntry.getValue()));
 
         if(!provider().generateColumn(dataBase.get(entry.getKey().toLowerCase()).getColumns().get(colEntry.getKey())).equalsIgnoreCase(provider().generateColumn(colEntry.getValue()))) {
           queries.add(provider().generateAlterColumn(entry.getKey(), colEntry.getValue()));
@@ -123,15 +122,10 @@ public class TableManager {
       final String base = "Tables." + tableName;
       TableData table = new TableData(prefix + tableName);
 
-      System.out.println("=============== Table: " + tableName + " ==================");
-
       //Set the table's settings
       table.setEngine(config.getString(base + ".Settings.Engine", ""));
       table.setCharacterSet(config.getString(base + ".Settings.Charset", ""));
       table.setCollate(config.getString(base + ".Settings.Collate", ""));
-
-      System.out.println("TAble Char: " + table.getCharacterSet());
-      System.out.println("TAble Char: " + table.getCollate());
 
       final Set<String> columns = config.getSection(base + ".Columns").getKeys();
 
@@ -140,11 +134,7 @@ public class TableManager {
         ColumnData column = new ColumnData(columnName);
 
         //Identifying
-        System.out.println("Column: " + columnName);
-        System.out.println("Provider: " + (provider() == null));
-        System.out.println("translator: " + (provider().translator() == null));
-        System.out.println("Node: " + baseNode + ".Type");
-        column.setType(provider().translator().translate(config.getString(baseNode + ".Type", "VARCHAR")));
+        column.setType(provider().translator().translate(config.getString(baseNode + ".Type", "VARCHAR").toUpperCase()));
         column.setPrimary(config.getBool(baseNode + ".Primary", false));
         column.setUnique(config.getBool(baseNode + ".Unique", false));
 
