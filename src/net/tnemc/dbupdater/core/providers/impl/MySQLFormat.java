@@ -5,6 +5,6 @@ import net.tnemc.dbupdater.core.providers.FormatProvider;
 public class MySQLFormat implements FormatProvider {
   @Override
   public String name() {
-    return "MySQL";
+    return "mysql";
   }
 }

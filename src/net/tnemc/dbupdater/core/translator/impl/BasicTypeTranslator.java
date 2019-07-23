@@ -15,6 +15,7 @@ public class BasicTypeTranslator implements FormatTypeTranslator {
     translations.put("I", "INTEGER");
     translations.put("INT", "INTEGER");
     translations.put("BI", "BIGINT");
+    translations.put("BOOLEAN", "TINYINT");
   }
 
   /**

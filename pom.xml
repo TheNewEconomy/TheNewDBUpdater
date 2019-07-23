@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.tnemc</groupId>
     <artifactId>TNDBU</artifactId>
-    <version>0.1.1.0</version>
+    <version>0.1.4.16</version>
     <packaging>jar</packaging>
     <name>The New Database Updater</name>
     <properties>
@@ -71,7 +71,7 @@
         <repository>
             <id>bintray-theneweconomy-java</id>
             <name>theneweconomy-java</name>
-            <url>https://api.bintray.com/maven/theneweconomy/java/TNECore/;publish=1</url>
+            <url>https://api.bintray.com/maven/theneweconomy/java/TNDBU/;publish=1</url>
         </repository>
     </distributionManagement>
 

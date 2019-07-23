@@ -5,7 +5,7 @@ import net.tnemc.dbupdater.core.providers.FormatProvider;
 public class H2Format implements FormatProvider {
   @Override
   public String name() {
-    return "H2";
+    return "h2";
   }
 
   @Override

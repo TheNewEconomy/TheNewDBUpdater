@@ -11,7 +11,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -65,11 +64,12 @@ public class TableManager {
 
   public void runQueries(Connection connection) {
     for(String query : queries) {
-      try(Statement statement = connection.createStatement()) {
+      System.out.println(query);
+      /*try(Statement statement = connection.createStatement()) {
         statement.executeUpdate(query);
       } catch(Exception e) {
         e.printStackTrace();
-      }
+      }*/
     }
   }
 
@@ -77,7 +77,7 @@ public class TableManager {
     List<String> tablesCreateName = new ArrayList<>();
 
     for(Map.Entry<String, TableData> entry : configurationTables.entrySet()) {
-      if(!dataBase.containsKey(entry.getKey())) {
+      if(!dataBase.containsKey(entry.getKey().toLowerCase())) {
         queries.add(provider().generateTableCreate(entry.getValue()));
         tablesCreateName.add(entry.getKey());
       }
@@ -86,18 +86,24 @@ public class TableManager {
     for(Map.Entry<String, TableData> entry : configurationTables.entrySet()) {
       if(tablesCreateName.contains(entry.getKey())) continue;
 
+      String lastColumn = "";
       for(Map.Entry<String, ColumnData> colEntry : entry.getValue().getColumns().entrySet()) {
-        if(!dataBase.get(entry.getKey()).getColumns().containsKey(colEntry.getKey())) {
-          queries.add(provider().generateAddColumn(entry.getKey(), Collections.singletonList(colEntry.getValue())));
+        if(!dataBase.get(entry.getKey().toLowerCase()).getColumns().containsKey(colEntry.getKey())) {
+          queries.add(provider().generateAddColumn(entry.getKey(), Collections.singletonList(colEntry.getValue()), lastColumn));
+          lastColumn = colEntry.getKey();
           continue;
         }
 
-        if(!dataBase.get(entry.getKey()).getColumns().get(colEntry.getKey()).toString().equalsIgnoreCase(colEntry.getValue().toString())) {
+        System.out.println("DB Column Gen: " + provider().generateColumn(dataBase.get(entry.getKey().toLowerCase()).getColumns().get(colEntry.getKey())));
+        System.out.println("Config Column Gen: " + provider().generateColumn(colEntry.getValue()));
+
+        if(!provider().generateColumn(dataBase.get(entry.getKey().toLowerCase()).getColumns().get(colEntry.getKey())).equalsIgnoreCase(provider().generateColumn(colEntry.getValue()))) {
           queries.add(provider().generateAlterColumn(entry.getKey(), colEntry.getValue()));
         }
+        lastColumn = colEntry.getKey();
       }
 
-      for(Map.Entry<String, ColumnData> colEntry : dataBase.get(entry.getKey()).getColumns().entrySet()) {
+      for(Map.Entry<String, ColumnData> colEntry : dataBase.get(entry.getKey().toLowerCase()).getColumns().entrySet()) {
         if(!entry.getValue().getColumns().containsKey(colEntry.getKey())) {
           queries.add(provider().generateDropColumn(entry.getKey(), Collections.singletonList(colEntry.getKey())));
         }
@@ -115,12 +121,17 @@ public class TableManager {
 
     for(String tableName : tables) {
       final String base = "Tables." + tableName;
-      TableData table = new TableData(tableName);
+      TableData table = new TableData(prefix + tableName);
+
+      System.out.println("=============== Table: " + tableName + " ==================");
 
       //Set the table's settings
       table.setEngine(config.getString(base + ".Settings.Engine", ""));
       table.setCharacterSet(config.getString(base + ".Settings.Charset", ""));
       table.setCollate(config.getString(base + ".Settings.Collate", ""));
+
+      System.out.println("TAble Char: " + table.getCharacterSet());
+      System.out.println("TAble Char: " + table.getCollate());
 
       final Set<String> columns = config.getSection(base + ".Columns").getKeys();
 
@@ -129,6 +140,10 @@ public class TableManager {
         ColumnData column = new ColumnData(columnName);
 
         //Identifying
+        System.out.println("Column: " + columnName);
+        System.out.println("Provider: " + (provider() == null));
+        System.out.println("translator: " + (provider().translator() == null));
+        System.out.println("Node: " + baseNode + ".Type");
         column.setType(provider().translator().translate(config.getString(baseNode + ".Type", "VARCHAR")));
         column.setPrimary(config.getBool(baseNode + ".Primary", false));
         column.setUnique(config.getBool(baseNode + ".Unique", false));
@@ -143,10 +158,11 @@ public class TableManager {
 
         //Defaults
         column.setDefaultValue(config.getString(baseNode + ".Default", null));
-        column.setCharacterSet(table.getCharacterSet());
-        column.setCharacterSet(config.getString(baseNode + ".Charset", ""));
-        column.setCollate(table.getCollate());
-        column.setCollate(config.getString(baseNode + ".Collate", ""));
+
+        if(!provider().translator().numericTypes().contains(column.getType())) {
+          column.setCollate(config.getString(baseNode + ".Settings.Collate", table.getCollate()));
+          column.setCharacterSet(config.getString(baseNode + ".Settings.Charset", table.getCharacterSet()));
+        }
 
         //Extra
         column.setNullable(config.getBool(baseNode + ".Null", true));
