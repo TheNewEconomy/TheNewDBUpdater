@@ -15,6 +15,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -88,6 +89,36 @@ public class TableManager {
         continue;
       }
 
+      //Check Primary Keys
+      final List<String> primaryConfig = entry.getValue().primaryKeys();
+      final List<String> primaryDB = dataBase.get(entry.getKey().toLowerCase()).primaryKeys();
+
+      boolean modifyPrimaries = false;
+      for(String primary : primaryConfig) {
+        if(!primaryDB.contains(primary.toLowerCase())) {
+          modifyPrimaries = true;
+          break;
+        }
+      }
+
+      //Check primaryDB for keys that are no longer primary keys
+      if(!modifyPrimaries) {
+        for(String primary : primaryDB) {
+          if(!primaryConfig.contains(primary.toLowerCase())) {
+            modifyPrimaries = true;
+            break;
+          }
+        }
+      }
+
+      if(modifyPrimaries) {
+        if(primaryDB.size() > 0) {
+          queries.add(provider().dropPrimary(entry.getKey().toLowerCase()));
+        }
+        queries.add(provider().addPrimary(entry.getKey().toLowerCase(), primaryConfig));
+      }
+
+      //Check columns
       String lastColumn = "";
       for(Map.Entry<String, ColumnData> colEntry : entry.getValue().getColumns().entrySet()) {
         if(!dataBase.get(entry.getKey().toLowerCase()).getColumns().containsKey(colEntry.getKey())) {
@@ -114,7 +145,7 @@ public class TableManager {
     CommentedConfiguration config = new CommentedConfiguration(new InputStreamReader(schemaFileStream, StandardCharsets.UTF_8), null);
     config.load();
 
-    final Set<String> tables = config.getSection("Tables").getKeys();
+    final LinkedHashSet<String> tables = config.getSection("Tables").getKeysLinked();
     final String prefix = config.getString("Settings.Prefix", "");
     prefixes.add(prefix);
 
@@ -127,7 +158,7 @@ public class TableManager {
       table.setCharacterSet(config.getString(base + ".Settings.Charset", ""));
       table.setCollate(config.getString(base + ".Settings.Collate", ""));
 
-      final Set<String> columns = config.getSection(base + ".Columns").getKeys();
+      final Set<String> columns = config.getSection(base + ".Columns").getKeysLinked();
 
       for(String columnName : columns) {
         final String baseNode = base + ".Columns." + columnName;

@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>net.tnemc</groupId>
     <artifactId>TNDBU</artifactId>
-    <version>0.1.5.0</version>
+    <version>0.1.5.1</version>
     <packaging>jar</packaging>
     <name>The New Database Updater</name>
     <properties>
@@ -86,7 +86,7 @@
         <dependency>
             <groupId>net.tnemc</groupId>
             <artifactId>TheNewConfigLibrary</artifactId>
-            <version>0.1.1.44</version>
+            <version>0.1.1.50</version>
         </dependency>
     </dependencies>
 </project>

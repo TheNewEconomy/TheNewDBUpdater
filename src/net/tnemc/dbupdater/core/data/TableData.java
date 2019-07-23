@@ -1,12 +1,11 @@
 package net.tnemc.dbupdater.core.data;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 public class TableData {
-  Map<String, ColumnData> columns = new HashMap<>();
+  LinkedHashMap<String, ColumnData> columns = new LinkedHashMap<>();
 
   private String name;
   private String characterSet = "";
@@ -30,11 +29,11 @@ public class TableData {
     columns.put(data.getName(), data);
   }
 
-  public Map<String, ColumnData> getColumns() {
+  public LinkedHashMap<String, ColumnData> getColumns() {
     return columns;
   }
 
-  public void setColumns(Map<String, ColumnData> columns) {
+  public void setColumns(LinkedHashMap<String, ColumnData> columns) {
     this.columns = columns;
   }
 

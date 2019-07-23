@@ -63,6 +63,14 @@ public interface FormatProvider {
     return "DROP TABLE " + table;
   }
 
+  default String addPrimary(String table, List<String> primaries) {
+    return "ALTER TABLE " + table + " ADD PRIMARY KEY(" + String.join(", ", primaries) + ")";
+  }
+
+  default String dropPrimary(String table) {
+    return "ALTER TABLE " + table + " DROP PRIMARY KEY";
+  }
+
   default String addColumn(ColumnData data, String after) {
     final String afterStr = (after.equalsIgnoreCase(""))? "" : " AFTER " + after;
     return " ADD COLUMN " + generateColumn(data) + afterStr;
