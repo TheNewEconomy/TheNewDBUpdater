@@ -33,9 +33,18 @@ public class TableManager {
   private Map<String, FormatProvider> providers = new HashMap<>();
 
   private String format;
+  private String prefixOverride = "";
 
   public TableManager(String format) {
     this.format = format;
+
+    addFormat(new H2Format());
+    addFormat(new MySQLFormat());
+  }
+
+  public TableManager(String format, String prefixOverride) {
+    this.format = format;
+    this.prefixOverride = prefixOverride;
 
     addFormat(new H2Format());
     addFormat(new MySQLFormat());
@@ -146,7 +155,8 @@ public class TableManager {
     config.load();
 
     final LinkedHashSet<String> tables = config.getSection("Tables").getKeysLinked();
-    final String prefix = config.getString("Settings.Prefix", "");
+    String prefix = config.getString("Settings.Prefix", "");
+    if(!prefixOverride.trim().equalsIgnoreCase("")) prefix = prefixOverride;
     prefixes.add(prefix);
 
     for(String tableName : tables) {
