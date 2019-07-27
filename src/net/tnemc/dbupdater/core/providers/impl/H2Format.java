@@ -7,6 +7,7 @@ import net.tnemc.dbupdater.core.providers.FormatProvider;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -63,12 +64,31 @@ public class H2Format implements FormatProvider {
           final long numericScale = results.getLong("numeric_scale");
           data.setScale(((results.wasNull())? -1 : numericScale));
 
-          final String columnKey = results.getString("constraint_type");
-          final String[] colListCols = results.getString("column_list").toLowerCase().split(",");
-          final List<String> columnList = Arrays.asList(colListCols);
-          data.setUnique(columnKey.toLowerCase().equalsIgnoreCase("unique") && columnList.contains(data.getName().toLowerCase()));
-          data.setPrimary(columnKey.toLowerCase().equalsIgnoreCase("primary key") && columnList.contains(data.getName().toLowerCase()));
+          String columnKey = results.getString("constraint_type");
+          String colList = results.getString("column_list");
+          //System.out.println("Column: " + data.getName());
 
+          //System.out.println("columnKey: " + columnKey);
+          //System.out.println("colList: " + colList);
+
+          if(colList != null && !colList.trim().equalsIgnoreCase("")) {
+            final String[] colListCols = colList.toLowerCase().split(",");
+            //System.out.println("colListCols: " + String.join("-", colListCols));
+
+
+            final List<String> columnList = new ArrayList<>(Arrays.asList(colListCols));
+            //System.out.println("Cols: " + String.join("-", columnList));
+            data.setUnique(columnKey.toLowerCase().contains("unique") && columnList.contains(data.getName().toLowerCase()));
+            data.setPrimary(columnKey.toLowerCase().contains("primary") && columnList.contains(data.getName().toLowerCase()));
+
+            /*System.out.println("setUnique: " + data.isUnique());
+            System.out.println("setPrimary: " + data.isPrimary());
+
+            System.out.println("Unique Check: " + columnKey.toLowerCase().equalsIgnoreCase("unique"));
+            System.out.println("Unique Check: " + columnList.contains(data.getName().toLowerCase()));
+            System.out.println("Primary Check: " + columnKey.toLowerCase().contains("primary"));
+            System.out.println("Primary Check: " + columnList.contains(data.getName().toLowerCase()));*/
+          }
           data.setIncrement(defaultValue != null && defaultValue.contains("PUBLIC.SYSTEM_SEQUENCE"));
 
 
@@ -80,10 +100,8 @@ public class H2Format implements FormatProvider {
         }
 
       } catch(Exception e) {
-        e.printStackTrace();
       }
     } catch(Exception e) {
-      e.printStackTrace();
     }
     return tables;
   }

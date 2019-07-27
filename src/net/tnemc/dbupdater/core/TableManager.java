@@ -110,6 +110,9 @@ public class TableManager {
         }
       }
 
+      //System.out.println("PRIMARIES: " + String.join(", ", primaryDB));
+      //System.out.println("PRIMARIES: " + String.join(", ", primaryConfig));
+
       //Check primaryDB for keys that are no longer primary keys
       if(!modifyPrimaries) {
         for(String primary : primaryDB) {
