@@ -25,6 +25,16 @@ public class TableData {
     return keys;
   }
 
+  public List<String> primaryKeys(boolean unique) {
+    List<String> keys = new ArrayList<>();
+
+    for(ColumnData data : columns.values()) {
+      if(data.isPrimary()) keys.add(data.getName());
+      if(unique && data.isUnique()) keys.add(data.getName());
+    }
+    return keys;
+  }
+
   public void addColumn(ColumnData data) {
     columns.put(data.getName(), data);
   }

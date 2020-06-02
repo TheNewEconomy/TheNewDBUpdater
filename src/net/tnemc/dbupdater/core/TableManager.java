@@ -75,6 +75,7 @@ public class TableManager {
 
   public void runQueries(Connection connection) {
     for(String query : queries) {
+      //System.out.println("Query: " + query);
       try(Statement statement = connection.createStatement()) {
         statement.executeUpdate(query);
       } catch(Exception e) {
@@ -100,23 +101,26 @@ public class TableManager {
 
       //Check Primary Keys
       final List<String> primaryConfig = entry.getValue().primaryKeys();
+      final List<String> primaryConfigUni = entry.getValue().primaryKeys(true);
       final List<String> primaryDB = dataBase.get(entry.getKey().toLowerCase()).primaryKeys();
+      final List<String> primaryDBUni = dataBase.get(entry.getKey().toLowerCase()).primaryKeys(true);
 
       boolean modifyPrimaries = false;
       for(String primary : primaryConfig) {
-        if(!primaryDB.contains(primary.toLowerCase())) {
+        if(!primaryDB.contains(primary.toLowerCase()) && !primaryDBUni.contains(primary.toLowerCase())) {
           modifyPrimaries = true;
           break;
         }
       }
 
       //System.out.println("PRIMARIES: " + String.join(", ", primaryDB));
+      //System.out.println("PRIMARIES: " + String.join(", ", primaryDBUni));
       //System.out.println("PRIMARIES: " + String.join(", ", primaryConfig));
 
       //Check primaryDB for keys that are no longer primary keys
       if(!modifyPrimaries) {
         for(String primary : primaryDB) {
-          if(!primaryConfig.contains(primary.toLowerCase())) {
+          if(!primaryConfig.contains(primary.toLowerCase()) && !primaryConfigUni.contains(primary.toLowerCase())) {
             modifyPrimaries = true;
             break;
           }
