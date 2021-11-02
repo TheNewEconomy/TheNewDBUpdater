@@ -15,7 +15,7 @@ public interface FormatTypeTranslator {
    * @return A list of data types that are numeric in nature. Example: INTEGER, BIGINT, INT, etc
    */
   default List<String> numericTypes() {
-    return Arrays.asList("TINYINT", "SMALLINT", "INT", "INTEGER", "BIGINT", "DECIMAL", "NUMBERIC", "FLOAT", "REAL", "DOUBLE");
+    return Arrays.asList("TINYINT", "SMALLINT", "INT", "INTEGER", "BIGINT", "DECIMAL", "NUMERIC", "FLOAT", "REAL", "DOUBLE");
   }
 
   /**
@@ -23,6 +23,6 @@ public interface FormatTypeTranslator {
    * Example: MySQL's DECIMAL(40, 4)
    */
   default List<String> scaleTypes() {
-    return Arrays.asList("DECIMAL", "NUMBERIC");
+    return Arrays.asList("DECIMAL", "NUMERIC");
   }
 }
