@@ -101,31 +101,36 @@ public interface FormatProvider {
     String extra = (data.isUnique())? " UNIQUE" : "";
     if(data.isIncrement()) extra += " AUTO_INCREMENT";
 
-    String collation = (collate)? characterSet(data.getCharacterSet()) + collation(data.getCollate()) : "";
+    final String collation = (collate)? characterSet(data.getCharacterSet()) + collation(data.getCollate()) : "";
 
-    String defaultValue = (data.getDefaultValue() == null)? "" : " DEFAULT '" + data.getDefaultValue() + "'";
+    final String defaultValue = (data.getDefaultValue() == null)? "" : " DEFAULT '" + data.getDefaultValue() + "'";
 
-    String column = "`" + data.getName() + "` " + translator().translate(data.getType()).toLowerCase() + length + nullable + extra + defaultValue + collation;
+    return "`" + data.getName() + "` " + translator().translate(data.getType()).toLowerCase() +
+           length + nullable + extra + defaultValue + collation;
 
-    return column;
   }
 
   default String generateTableCreate(TableData data) {
-    StringBuilder builder = new StringBuilder();
+    final StringBuilder builder = new StringBuilder();
 
-    builder.append("CREATE TABLE IF NOT EXISTS `" + data.getName() + "` (");
+    builder.append("CREATE TABLE IF NOT EXISTS `").append(data.getName()).append("` (");
 
     int i = 0;
     for(ColumnData columnData : data.getColumns().values()) {
+
       if(i > 0) builder.append(", ");
+
       builder.append(generateColumn(columnData, false));
       i++;
     }
 
     if(data.primaryKeys().size() > 0) {
-      builder.append(", PRIMARY KEY(" + String.join(", ", data.primaryKeys()) + ")");
+      builder.append(", PRIMARY KEY(").append(String.join(", ", data.primaryKeys()))
+             .append(")");
     }
-    builder.append(")" + engine(data.getEngine()) + characterSet(data.getCharacterSet()) + collation(data.getCollate()));
+
+    builder.append(")").append(engine(data.getEngine())).append(characterSet(data.getCharacterSet()))
+           .append(collation(data.getCollate()));
 
     return builder.toString();
   }
@@ -135,7 +140,7 @@ public interface FormatProvider {
   }
 
   default String generateAddColumn(String table, List<ColumnData> columns, String after) {
-    StringBuilder builder = new StringBuilder();
+    final StringBuilder builder = new StringBuilder();
 
     builder.append(alterTable(table));
 
@@ -150,7 +155,7 @@ public interface FormatProvider {
   }
 
   default String generateDropColumn(String table, List<String> columns) {
-    StringBuilder builder = new StringBuilder();
+    final StringBuilder builder = new StringBuilder();
 
     builder.append(alterTable(table));
 
@@ -171,15 +176,15 @@ public interface FormatProvider {
    * @return The completed LIKE statment
    */
   default String generateLike(String column, List<String> like, boolean not) {
-    StringBuilder builder = new StringBuilder();
+    final StringBuilder builder = new StringBuilder();
 
     for(String l : like) {
       if(builder.length() > 0) {
         builder.append(" AND ");
       }
-      builder.append(column + " ");
+      builder.append(column).append(" ");
       if(not) builder.append("NOT ");
-      builder.append("LIKE '" + l + "%'");
+      builder.append("LIKE '").append(l).append("%'");
     }
     builder.append(" ");
     return builder.toString();
@@ -187,7 +192,7 @@ public interface FormatProvider {
 
   default Map<String, TableData> getTableData(Connection connection, List<String> prefixes) {
 
-    Map<String, TableData> tables = new HashMap<>();
+    final Map<String, TableData> tables = new HashMap<>();
 
     try(Statement statement = connection.createStatement()) {
       try(ResultSet results = statement.executeQuery(metaQuery()  + " " + generateLike("table_name", prefixes, false))) {
@@ -195,7 +200,7 @@ public interface FormatProvider {
         while(results.next()) {
           final String table = results.getString("table_name");
 
-          ColumnData data = new ColumnData(results.getString("column_name"));
+          final ColumnData data = new ColumnData(results.getString("column_name"));
 
           final String defaultValue = results.getString("column_default");
           data.setDefaultValue(((results.wasNull())? null : defaultValue));
@@ -226,7 +231,7 @@ public interface FormatProvider {
           data.setIncrement(results.getString("extra").contains("auto_increment"));
 
 
-          TableData tableData = tables.getOrDefault(table, new TableData(table));
+          final TableData tableData = tables.getOrDefault(table, new TableData(table));
 
           tableData.addColumn(data);
 

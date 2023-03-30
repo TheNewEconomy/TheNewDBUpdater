@@ -1,21 +1,19 @@
 package net.tnemc.dbupdater.core;
 
-import net.tnemc.config.CommentedConfiguration;
 import net.tnemc.dbupdater.core.data.ColumnData;
 import net.tnemc.dbupdater.core.data.TableData;
 import net.tnemc.dbupdater.core.providers.FormatProvider;
 import net.tnemc.dbupdater.core.providers.impl.H2Format;
 import net.tnemc.dbupdater.core.providers.impl.MySQLFormat;
+import org.simpleyaml.configuration.file.YamlFile;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.io.File;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +21,8 @@ import java.util.Set;
 
 public class TableManager {
 
-  Map<String, TableData> configurationTables = new HashMap<>();
-  Map<String, TableData> dataBase = new HashMap<>();
+  private Map<String, TableData> configurationTables = new HashMap<>();
+  private Map<String, TableData> dataBase = new HashMap<>();
 
   private LinkedList<String> queries = new LinkedList<>();
 
@@ -66,8 +64,8 @@ public class TableManager {
     return providers.get(format);
   }
 
-  public void generateQueriesAndRun(Connection connection, InputStream schemaFileStream) {
-    generateConfigurationTables(schemaFileStream);
+  public void generateQueriesAndRun(Connection connection, File schemaFile) {
+    generateConfigurationTables(schemaFile);
     generateDataBaseTables(connection);
     generateQueries();
     runQueries(connection);
@@ -75,7 +73,7 @@ public class TableManager {
 
   public void runQueries(Connection connection) {
     for(String query : queries) {
-      //System.out.println("Query: " + query);
+
       try(Statement statement = connection.createStatement()) {
         statement.executeUpdate(query);
       } catch(Exception e) {
@@ -112,10 +110,6 @@ public class TableManager {
           break;
         }
       }
-
-      //System.out.println("PRIMARIES: " + String.join(", ", primaryDB));
-      //System.out.println("PRIMARIES: " + String.join(", ", primaryDBUni));
-      //System.out.println("PRIMARIES: " + String.join(", ", primaryConfig));
 
       //Check primaryDB for keys that are no longer primary keys
       if(!modifyPrimaries) {
@@ -157,11 +151,17 @@ public class TableManager {
     }
   }
 
-  public void generateConfigurationTables(InputStream schemaFileStream) {
-    CommentedConfiguration config = new CommentedConfiguration(new InputStreamReader(schemaFileStream, StandardCharsets.UTF_8), null);
-    config.load();
+  public void generateConfigurationTables(final File schema) {
 
-    final LinkedHashSet<String> tables = config.getSection("Tables").getKeysLinked();
+    final YamlFile config = new YamlFile(schema);
+
+    try {
+      config.loadWithComments();
+    } catch(IOException e) {
+      e.printStackTrace();
+    }
+
+    final Set<String> tables = config.getConfigurationSection("Tables").getKeys(false);
     String prefix = config.getString("Settings.Prefix", "");
     if(!prefixOverride.trim().equalsIgnoreCase("")) prefix = prefixOverride;
     prefixes.add(prefix);
@@ -175,7 +175,7 @@ public class TableManager {
       table.setCharacterSet(config.getString(base + ".Settings.Charset", ""));
       table.setCollate(config.getString(base + ".Settings.Collate", ""));
 
-      final Set<String> columns = config.getSection(base + ".Columns").getKeysLinked();
+      final Set<String> columns = config.getConfigurationSection(base + ".Columns").getKeys(false);
 
       for(String columnName : columns) {
         final String baseNode = base + ".Columns." + columnName;
@@ -183,16 +183,16 @@ public class TableManager {
 
         //Identifying
         column.setType(provider().translator().translate(config.getString(baseNode + ".Type", "VARCHAR").toUpperCase()));
-        column.setPrimary(config.getBool(baseNode + ".Primary", false));
-        column.setUnique(config.getBool(baseNode + ".Unique", false));
+        column.setPrimary(config.getBoolean(baseNode + ".Primary", false));
+        column.setUnique(config.getBoolean(baseNode + ".Unique", false));
 
         //Length
         if(provider().translator().numericTypes().contains(column.getType())) {
-          column.setPrecision(Long.valueOf(config.getString(baseNode + ".Length", "-1")));
+          column.setPrecision(Long.parseLong(config.getString(baseNode + ".Length", "-1")));
         } else {
-          column.setLength(Long.valueOf(config.getString(baseNode + ".Length", "-1")));
+          column.setLength(Long.parseLong(config.getString(baseNode + ".Length", "-1")));
         }
-        column.setScale(Long.valueOf(config.getString(baseNode + ".Scale", "-1")));
+        column.setScale(Long.parseLong(config.getString(baseNode + ".Scale", "-1")));
 
         //Defaults
         column.setDefaultValue(config.getString(baseNode + ".Default", null));
@@ -203,8 +203,8 @@ public class TableManager {
         }
 
         //Extra
-        column.setNullable(config.getBool(baseNode + ".Null", true));
-        column.setIncrement(config.getBool(baseNode + ".Increment", false));
+        column.setNullable(config.getBoolean(baseNode + ".Null", true));
+        column.setIncrement(config.getBoolean(baseNode + ".Increment", false));
 
         table.addColumn(column);
       }

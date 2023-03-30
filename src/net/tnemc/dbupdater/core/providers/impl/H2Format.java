@@ -34,7 +34,7 @@ public class H2Format implements FormatProvider {
   @Override
   public Map<String, TableData> getTableData(Connection connection, List<String> prefixes) {
 
-    Map<String, TableData> tables = new HashMap<>();
+    final Map<String, TableData> tables = new HashMap<>();
 
     try(Statement statement = connection.createStatement()) {
       try(ResultSet results = statement.executeQuery(metaQuery()  + " " + generateLike("col.table_name", prefixes, false))) {
@@ -43,7 +43,7 @@ public class H2Format implements FormatProvider {
 
           final String table = results.getString("table_name").toLowerCase();
 
-          ColumnData data = new ColumnData(results.getString("column_name"));
+          final ColumnData data = new ColumnData(results.getString("column_name"));
 
           String defaultValue = results.getString("column_default");
           if(defaultValue != null) {
@@ -64,44 +64,31 @@ public class H2Format implements FormatProvider {
           final long numericScale = results.getLong("numeric_scale");
           data.setScale(((results.wasNull())? -1 : numericScale));
 
-          String columnKey = results.getString("constraint_type");
-          String colList = results.getString("column_list");
-          //System.out.println("Column: " + data.getName());
-
-          //System.out.println("columnKey: " + columnKey);
-          //System.out.println("colList: " + colList);
+          final String columnKey = results.getString("constraint_type");
+          final String colList = results.getString("column_list");
 
           if(colList != null && !colList.trim().equalsIgnoreCase("")) {
             final String[] colListCols = colList.toLowerCase().split(",");
-            //System.out.println("colListCols: " + String.join("-", colListCols));
 
 
             final List<String> columnList = new ArrayList<>(Arrays.asList(colListCols));
-            //System.out.println("Cols: " + String.join("-", columnList));
             data.setUnique(columnKey.toLowerCase().contains("unique") && columnList.contains(data.getName().toLowerCase()));
             data.setPrimary(columnKey.toLowerCase().contains("primary") && columnList.contains(data.getName().toLowerCase()));
 
-            /*System.out.println("setUnique: " + data.isUnique());
-            System.out.println("setPrimary: " + data.isPrimary());
-
-            System.out.println("Unique Check: " + columnKey.toLowerCase().equalsIgnoreCase("unique"));
-            System.out.println("Unique Check: " + columnList.contains(data.getName().toLowerCase()));
-            System.out.println("Primary Check: " + columnKey.toLowerCase().contains("primary"));
-            System.out.println("Primary Check: " + columnList.contains(data.getName().toLowerCase()));*/
           }
           data.setIncrement(defaultValue != null && defaultValue.contains("PUBLIC.SYSTEM_SEQUENCE"));
 
 
-          TableData tableData = tables.getOrDefault(table, new TableData(table));
+          final TableData tableData = tables.getOrDefault(table, new TableData(table));
 
           tableData.addColumn(data);
 
           tables.put(table, tableData);
         }
 
-      } catch(Exception e) {
+      } catch(Exception ignore) {
       }
-    } catch(Exception e) {
+    } catch(Exception ignore) {
     }
     return tables;
   }

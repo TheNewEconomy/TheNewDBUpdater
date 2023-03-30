@@ -7,7 +7,7 @@ import java.util.Map;
 
 public class BasicTypeTranslator implements FormatTypeTranslator {
 
-  private Map<String, String> translations = new HashMap<>();
+  private final Map<String, String> translations = new HashMap<>();
 
   public BasicTypeTranslator() {
     translations.put("TI", "TINYINT");
@@ -15,6 +15,7 @@ public class BasicTypeTranslator implements FormatTypeTranslator {
     translations.put("I", "INTEGER");
     translations.put("INT", "INTEGER");
     translations.put("BI", "BIGINT");
+    translations.put("B", "BIGINT");
     translations.put("BOOLEAN", "TINYINT");
   }
 

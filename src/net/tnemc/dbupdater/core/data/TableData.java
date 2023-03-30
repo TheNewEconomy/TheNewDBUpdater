@@ -5,7 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 public class TableData {
-  LinkedHashMap<String, ColumnData> columns = new LinkedHashMap<>();
+  private final LinkedHashMap<String, ColumnData> columns = new LinkedHashMap<>();
 
   private String name;
   private String characterSet = "";
@@ -43,8 +43,9 @@ public class TableData {
     return columns;
   }
 
-  public void setColumns(LinkedHashMap<String, ColumnData> columns) {
-    this.columns = columns;
+  public void setColumns(final LinkedHashMap<String, ColumnData> columns) {
+    this.columns.clear();
+    this.columns.putAll(columns);
   }
 
   public String getName() {
